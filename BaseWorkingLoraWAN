@@ -1,10 +1,7 @@
-#include <heltec_unofficial.h>
+#include <heltec_unofficial_edit.h>
 #include <LoRaWAN_ESP32.h>
 #include <Wire.h>
 #include "SSD1306Wire.h"
-
-// Explicitly define the OLED display instance
-
 
 LoRaWANNode* node;
 uint8_t count = 0;
@@ -15,7 +12,6 @@ uint8_t appDataSize = 0;
 uint8_t appPort = 2;
 
 void setup() {
-    // VextON() removed, ensure external power is enabled another way  // Enable external power for OLED
     delay(100);
     heltec_setup();  // Initialize Heltec board
     heltec_ve(true); // Enable external power for OLED
@@ -45,7 +41,6 @@ void setup() {
 
 void loop() {
     uint8_t uplinkData[1];
-    uplinkData[0] = heltec_battery_percent();
 
     memcpy(appData, uplinkData, sizeof(uplinkData));
     appDataSize = sizeof(uplinkData);
@@ -59,17 +54,16 @@ void loop() {
 
     int16_t rssi = radio.getRSSI();
     float snr = radio.getSNR();
-    int batteryPercent = heltec_battery_percent();
 
     // Display on OLED
-    updateOLED(rssi, snr, batteryPercent);
+    updateOLED(rssi, snr);
 
     if (state == RADIOLIB_ERR_NONE) {
         Serial.println("Message sent, no downlink received.");
     } else if (state > 0) {
         Serial.printf(
-            "Message sent, downlink received. RSSI: %d dBm, SNR: %.1f dB, Battery: %d%%\n",
-            rssi, snr, batteryPercent
+            "Message sent, downlink received. RSSI: %d dBm (%s), SNR: %.1f dB\n",
+            rssi, getSignalQuality(rssi), snr
         );
     } else {
         Serial.printf("sendReceive returned error %d, retrying...\n", state);
@@ -79,7 +73,7 @@ void loop() {
 }
 
 // Function to update the OLED display
-void updateOLED(int16_t rssi, float snr, int battery) {
+void updateOLED(int16_t rssi, float snr) {
     display.clear();  // Clear the display
 
     display.setTextAlignment(TEXT_ALIGN_LEFT);
@@ -87,7 +81,15 @@ void updateOLED(int16_t rssi, float snr, int battery) {
 
     display.drawString(0, 0, "RSSI: " + String(rssi) + " dBm");
     display.drawString(0, 16, "SNR: " + String(snr) + " dB");
-    display.drawString(0, 32, "Battery: " + String(battery) + "%");
+    display.drawString(0, 32, String(getSignalQuality(rssi)));
 
     display.display();  // Refresh the display
+}
+
+// Function to determine signal quality based on RSSI
+const char* getSignalQuality(int16_t rssi) {
+    if (rssi > -50) return "Excellent";
+    else if (rssi > -70) return "Good";
+    else if (rssi > -90) return "Moderate";
+    else return "Weak";
 }

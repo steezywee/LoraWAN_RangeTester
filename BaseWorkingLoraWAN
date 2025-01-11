@@ -55,7 +55,7 @@ void loop() {
     size_t lenDown = sizeof(downlinkData);
 
     Serial.println("Sending confirmed uplink...");
-    int16_t state = node->sendReceive(uplinkData, sizeof(uplinkData), 2, downlinkData, &lenDown); // Send as confirmed uplink
+    int16_t state = node->sendReceive(uplinkData, sizeof(uplinkData), 2, downlinkData, &lenDown, true); // Send as confirmed uplink
 
     int16_t rssi = radio.getRSSI();
     float snr = radio.getSNR();

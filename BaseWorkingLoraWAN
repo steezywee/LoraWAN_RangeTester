@@ -15,8 +15,9 @@ void setup() {
     delay(100);
     heltec_setup();  // Initialize Heltec board
     heltec_ve(true); // Enable external power for OLED
-   
+
     display.init();
+    display.flipScreenVertically();  // Flip the screen
     display.setFont(ArialMT_Plain_10);
     display.clear();
     display.drawString(0, 0, "Starting...");
@@ -60,11 +61,13 @@ void loop() {
 
     if (state == RADIOLIB_ERR_NONE) {
         Serial.println("Message sent, no downlink received.");
+        showAckStatus(false); // Show "X" on bottom right
     } else if (state > 0) {
         Serial.printf(
             "Message sent, downlink received. RSSI: %d dBm (%s), SNR: %.1f dB\n",
             rssi, getSignalQuality(rssi), snr
         );
+        showAckStatus(true); // Show "OK!" on bottom right
     } else {
         Serial.printf("sendReceive returned error %d, retrying...\n", state);
     }
@@ -79,11 +82,34 @@ void updateOLED(int16_t rssi, float snr) {
     display.setTextAlignment(TEXT_ALIGN_LEFT);
     display.setFont(ArialMT_Plain_16);
 
-    display.drawString(0, 0, "RSSI: " + String(rssi) + " dBm");
-    display.drawString(0, 16, "SNR: " + String(snr) + " dB");
-    display.drawString(0, 32, String(getSignalQuality(rssi)));
-
+    display.drawString(0, 16, "RSSI: " + String(rssi) + " dBm");
+    display.drawString(0, 32, "SNR: " + String(snr) + " dB");
+    display.drawString(0, 48, String(getSignalQuality(rssi)));
+    
     display.display();  // Refresh the display
+}
+
+// Function to display ACK status on bottom right for 2 seconds
+void showAckStatus(bool received) {
+    display.setTextAlignment(TEXT_ALIGN_LEFT);
+    display.setFont(ArialMT_Plain_16);
+    display.drawString(0, 48, String(getSignalQuality(radio.getRSSI())));
+    
+    display.setTextAlignment(TEXT_ALIGN_RIGHT);
+    if (received) {
+        display.drawString(120, 48, "OK");
+    } else {
+        display.drawString(120, 48, "X");
+    }
+    
+    display.display();
+    delay(5000);  // Show for 2 seconds
+
+    // Clear the bottom right corner more effectively
+    display.setColor(BLACK);
+    display.fillRect(95, 47, 33, 17); // Clear
+    display.setColor(WHITE);
+    display.display();
 }
 
 // Function to determine signal quality based on RSSI
